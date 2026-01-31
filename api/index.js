@@ -637,21 +637,90 @@ app.post("/api/send-otp", async (req, res) => {
             res.json({ success: true, message: "OTP sent to email" });
         } else {
             console.warn("[OTP] No Email Service configured or all failed.");
+            res.status(503).json({ success: false, message: "Email service failed.", error: lastError });
+        }
 
-            // If dev mode (no email creds), return success with stub
-            if (!EMAIL_USER && !EMAILJS_SERVICE_ID) {
-                res.json({ success: true, message: "OTP generated (Check server logs - No Email Provider Configured)" });
+    } catch (error) {
+        console.error('[API] Send OTP error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// ANTIVIRUS SCAN ENDPOINT (VirusTotal Proxy)
+app.post("/api/antivirus/scan", async (req, res) => {
+    try {
+        const { resource, type } = req.body; // resource = hash or url or query
+        const apiKey = process.env.VIRUSTOTAL_API_KEY;
+
+        if (!apiKey) {
+            return res.status(500).json({ success: false, message: "Server missing VIRUSTOTAL_API_KEY" });
+        }
+
+        let endpoint = "";
+
+        if (type === 'file') {
+            // Resource is a SHA-256 Hash
+            endpoint = `files/${resource}`;
+        } else if (type === 'url') {
+            // Resource is a URL -> Needs Base64 Encoding
+            const urlId = Buffer.from(resource).toString('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+            endpoint = `urls/${urlId}`;
+        } else if (type === 'search') {
+            // Query: Try to guess or use search endpoint?
+            // VT Search Search: GET /search?query=...
+            // But usually we just want to look up a Hash/IP/Domain directly if we can guess.
+            // Simple heuristic to map to direct endpoints for detailed reports:
+            if (/^[a-fA-F0-9]{32,64}$/.test(resource)) { // Weak hash check
+                endpoint = `files/${resource}`;
+            } else if (/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(resource)) { // IP
+                endpoint = `ip_addresses/${resource}`;
             } else {
-                // Return actual error for debugging
-                res.status(500).json({ success: false, message: "Failed: " + lastError });
+                // Assume Domain
+                endpoint = `domains/${resource}`;
+            }
+        }
+
+        console.log(`[VT] Scanning ${type} : ${resource} -> ${endpoint}`);
+
+        try {
+            const response = await axios.get(`https://www.virustotal.com/api/v3/${endpoint}`, {
+                headers: { 'x-apikey': apiKey }
+            });
+
+            // If success
+            res.json({ success: true, result: response.data.data.attributes });
+
+        } catch (apiError) {
+            if (apiError.response && apiError.response.status === 404) {
+                // 404 means "Not Found" in VT DB.
+                // For URL, we *could* submit a scan. For File/Search, just say not found.
+                if (type === 'url') {
+                    // Submit URL for scanning
+                    try {
+                        const scanRes = await axios.post('https://www.virustotal.com/api/v3/urls',
+                            new URLSearchParams({ url: resource }),
+                            { headers: { 'x-apikey': apiKey, 'Content-Type': 'application/x-www-form-urlencoded' } }
+                        );
+                        // Return "queued" status
+                        res.json({ success: false, message: "URL not in database. Scan started! Please check back in a few minutes." });
+                    } catch (scanErr) {
+                        res.status(500).json({ success: false, message: "URL Scan Submission Failed." });
+                    }
+                } else {
+                    res.json({ success: false, message: "Resource not found in VirusTotal database." });
+                }
+            } else {
+                console.error("[VT] API Request Failed:", apiError.message);
+                res.status(502).json({ success: false, message: "VirusTotal API Failed: " + (apiError.response?.status || "Unknown") });
             }
         }
 
     } catch (error) {
-        console.error('[API] OTP error:', error);
+        console.error("[VT] Handler Error:", error);
         res.status(500).json({ error: error.message });
     }
 });
+
 
 app.post("/api/verify-otp", async (req, res) => {
     try {

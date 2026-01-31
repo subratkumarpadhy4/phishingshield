@@ -685,6 +685,7 @@
                 <li><a class="nav-item" data-tab="tab-threats">⚠️ Threats Encountered</a></li>
                 <li><a class="nav-item" data-tab="tab-reports">📢 My Reports</a></li>
                 <li><a class="nav-item" data-tab="tab-extensions">🧩 Extensions</a></li>
+                <li><a class="nav-item" data-tab="tab-antivirus">🦠 Antivirus</a></li>
             </ul>
         </nav>
 
@@ -1056,6 +1057,109 @@
             </div>
         </div>
 
+        <!-- TAB: ANTIVIRUS -->
+        <div id="tab-antivirus" class="tab-content">
+            <div style="max-width: 800px; margin: 0 auto; text-align: center;">
+                <img src="images/virustotal_shield.png" style="width: 80px; margin-bottom: 20px;"
+                    onerror="this.src='images/icon128.png'">
+                <h2 style="font-size: 28px; margin-bottom: 10px; color: var(--dark);">VirusTotal Scanner</h2>
+                <p style="color: var(--secondary); margin-bottom: 40px;">Analyze suspicious files, domains, IPs and URLs
+                    to detect malware and other breaches.</p>
+
+                <!-- VT TABS -->
+                <div
+                    style="background: white; border-radius: 16px; box-shadow: var(--shadow-sm); overflow: hidden; border: 1px solid var(--border-color);">
+                    <div style="display: flex; border-bottom: 1px solid var(--border-color);">
+                        <button class="vt-tab active" onclick="switchVtTab('file')"
+                            style="flex: 1; padding: 20px; background: none; border: none; font-weight: 600; cursor: pointer; color: var(--primary); border-bottom: 3px solid var(--primary);">FILE</button>
+                        <button class="vt-tab" onclick="switchVtTab('url')"
+                            style="flex: 1; padding: 20px; background: none; border: none; font-weight: 600; cursor: pointer; color: var(--secondary); border-bottom: 3px solid transparent;">URL</button>
+                        <button class="vt-tab" onclick="switchVtTab('search')"
+                            style="flex: 1; padding: 20px; background: none; border: none; font-weight: 600; cursor: pointer; color: var(--secondary); border-bottom: 3px solid transparent;">SEARCH</button>
+                    </div>
+
+                    <div style="padding: 40px;">
+                        <!-- FILE SECTION -->
+                        <div id="vt-section-file" class="vt-section">
+                            <div style="border: 2px dashed #cbd5e1; border-radius: 12px; padding: 40px; cursor: pointer; transition: all 0.2s;"
+                                onmouseover="this.style.borderColor=var(--primary); this.style.backgroundColor='rgba(37, 99, 235, 0.05)'"
+                                onmouseout="this.style.borderColor='#cbd5e1'; this.style.backgroundColor='transparent'"
+                                onclick="document.getElementById('vt-file-input').click()">
+                                <div style="font-size: 40px; margin-bottom: 10px;">📁</div>
+                                <div style="font-weight: 600; color: var(--dark); margin-bottom: 5px;">Choose a file to
+                                    scan</div>
+                                <div style="font-size: 13px; color: var(--secondary);">We calculate the hash
+                                    client-side. Your file is NOT uploaded.</div>
+                                <input type="file" id="vt-file-input" style="display: none;">
+                            </div>
+                        </div>
+
+                        <!-- URL SECTION -->
+                        <div id="vt-section-url" class="vt-section" style="display: none;">
+                            <div style="display: flex; gap: 10px;">
+                                <input type="text" id="vt-url-input" placeholder="http://example.com"
+                                    style="flex: 1; padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); font-size: 16px;">
+                                <button onclick="scanUrl()"
+                                    style="padding: 0 30px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 20px;">🔍</button>
+                            </div>
+                        </div>
+
+                        <!-- SEARCH SECTION -->
+                        <div id="vt-section-search" class="vt-section" style="display: none;">
+                            <div style="display: flex; gap: 10px;">
+                                <input type="text" id="vt-search-input"
+                                    placeholder="URL, IP address, domain or file hash"
+                                    style="flex: 1; padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); font-size: 16px;">
+                                <button onclick="scanSearch()"
+                                    style="padding: 0 30px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 20px;">🔍</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RESULTS CONTAINER -->
+                <div id="vt-results" style="display: none; margin-top: 30px; text-align: left;">
+                    <div
+                        style="background: white; border-radius: 16px; border: 1px solid var(--border-color); overflow: hidden;">
+                        <!-- Header / Score -->
+                        <div
+                            style="padding: 20px; background: #f8fafc; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <h3 id="vt-res-target" style="margin: 0; font-size: 16px; color: var(--dark);">
+                                    analysis_target</h3>
+                                <div id="vt-res-date" style="font-size: 12px; color: var(--secondary);">Just now</div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div id="vt-score-badge"
+                                    style="display: inline-flex; align-items: center; justify-content: center; width: 60px; height: 60px; border-radius: 50%; border: 4px solid #ef4444; color: #ef4444; font-weight: 700; font-size: 20px;">
+                                    <span id="vt-positives">0</span>/<span id="vt-total">0</span>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Engines Grid -->
+                        <div style="padding: 20px;">
+                            <h4
+                                style="font-size: 13px; text-transform: uppercase; color: var(--secondary); margin-bottom: 15px;">
+                                Security Vendors Analysis</h4>
+                            <div id="vt-engines-grid"
+                                style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px;">
+                                <!-- Populated by JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- LOADING -->
+                <div id="vt-loading" style="display: none; margin-top: 50px;">
+                    <div class="rotating"
+                        style="display: inline-block; width: 40px; height: 40px; border: 4px solid #e2e8f0; border-top-color: var(--primary); border-radius: 50%;">
+                    </div>
+                    <p style="margin-top: 15px; color: var(--secondary); font-weight: 500;">Scanning...</p>
+                </div>
+
+            </div>
+        </div>
+
     </main>
 
     <!-- PROFILE MODAL -->
@@ -1096,6 +1200,7 @@
     <script src="js/threat_intel.js"></script>
     <script src="js/simple_charts.js"></script>
     <script src="js/dashboard.js"></script>
+    <script src="js/antivirus.js"></script>
     <script>
         // Tab Logic
         const navLinks = document.querySelectorAll('.nav-item');
