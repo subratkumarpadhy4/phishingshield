@@ -3077,3 +3077,4 @@ if (!process.env.VERCEL) {
 
 // Export for Vercel serverless functions
 module.exports = app;
+// Trigger redeploy Sat Jan 31 23:17:54 IST 2026
