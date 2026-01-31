@@ -35,7 +35,11 @@ function switchVtTab(tabName) {
 // ------------------------------------------------------------------
 // FILE SCANNING (Client-side Hash -> Backend Lookup)
 // ------------------------------------------------------------------
+// ------------------------------------------------------------------
+// FILE SCANNING (Client-side Hash -> Backend Lookup)
+// ------------------------------------------------------------------
 document.addEventListener('DOMContentLoaded', () => {
+    // 1. File Input Listener
     const fileInput = document.getElementById('vt-file-input');
     if (fileInput) {
         fileInput.addEventListener('change', async (e) => {
@@ -45,6 +49,28 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    // 2. Scan URL Button
+    const btnScanUrl = document.getElementById('btn-scan-url');
+    if (btnScanUrl) {
+        btnScanUrl.addEventListener('click', scanUrl);
+    }
+
+    // 3. Scan Search Button
+    const btnScanSearch = document.getElementById('btn-scan-search');
+    if (btnScanSearch) {
+        btnScanSearch.addEventListener('click', scanSearch);
+    }
+
+    // 4. Tab Switching (CSP Safe)
+    const tabs = document.querySelectorAll('.vt-tab');
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            // Derive tab name from text: FILE -> file
+            const tabName = tab.textContent.trim().toLowerCase();
+            switchVtTab(tabName);
+        });
+    });
 });
 
 async function startFileScan(file) {
