@@ -159,11 +159,16 @@ async function fetchVTAnalysis(resource, type, displayName) {
             renderResults(data.result, displayName);
         } else {
             console.warn("[Antivirus] Scan returned unsuccessful:", data);
-            // If it's a "queued" message, show it as info, otherwise error
+
             if (data.message && data.message.includes("Scan started")) {
+                // Formatting for queued URL scan
                 alert("ℹ️ " + data.message);
+            } else if (data.message && (data.message.includes("not found") || data.message.includes("not in VirusTotal"))) {
+                // Graceful handling for unknown files
+                alert("ℹ️ No Detection Found\n\nThis file/resource has not been analyzed by VirusTotal before. \n\nThis usually means the file is new or private.");
             } else {
-                alert("⚠️ Scan Failed: " + (data.message || "Unknown error"));
+                // Actual errors
+                alert("⚠️ Scan Error: " + (data.message || "Unknown error"));
             }
             hideLoading();
         }
