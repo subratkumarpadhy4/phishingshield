@@ -321,9 +321,22 @@ app.post("/api/reports/ai-verify", async (req, res) => {
                 // Ensure riskScore is a number
                 let score = parseInt(parsed.risk_score || parsed.riskScore || 0);
 
-                // Fallback scoring if AI returns 0 but suggests BAN
-                if (score === 0 && (parsed.classification?.toLowerCase() === 'malicious' || parsed.classification?.toLowerCase() === 'suspicious')) {
-                    score = parsed.classification.toLowerCase() === 'malicious' ? 85 : 55;
+                // BACKUP: Regex extraction if JSON parse returned 0 but text contains score
+                if (score === 0) {
+                    const scoreMatch = text.match(/risk_?score"?\s*:\s*(\d+)/i);
+                    if (scoreMatch) score = parseInt(scoreMatch[1]);
+                }
+
+                // Fallback scoring if AI returns 0 but suggests BAN (or is malicious)
+                const riskLevel = (parsed.classification || 'unknown').toLowerCase();
+                const summaryText = (parsed.summary || "").toLowerCase();
+
+                if (score === 0) {
+                    if (riskLevel.includes('malicious') || riskLevel.includes('high') || riskLevel.includes('critical') || summaryText.includes('phishing')) {
+                        score = 85;
+                    } else if (riskLevel.includes('suspicious') || riskLevel.includes('caution')) {
+                        score = 55;
+                    }
                 }
 
                 analysisResult = {
