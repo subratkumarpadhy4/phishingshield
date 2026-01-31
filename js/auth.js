@@ -151,26 +151,32 @@ const Auth = {
      * Logs in a user
      */
     login: function (email, password, callback) {
-        // Try Global Login first
-        fetch(`${API_BASE}/users`)
+        // Use Server-Side Login (Secure)
+        fetch(`${API_BASE}/users/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        })
             .then(res => res.json())
-            .then(users => {
-                const user = users.find(u => u.email === email);
-                if (user) {
-                    console.log("[Auth] Found User:", user.email);
-                    console.log("[Auth] Checking Pass:", password, "vs", user.password);
-                    if (user.password === password) {
-                        this._restoreSession(user, callback);
-                    } else {
-                        callback({ success: false, message: "Invalid Password." });
-                    }
+            .then(data => {
+                if (data.success) {
+                    console.log("[Auth] Login Successful:", data.user.email);
+                    // Server returns user object and token
+                    // We need to adapt it to the local format expected by _restoreSession
+                    const user = data.user;
+                    // Token handling could be added here if needed for future authenticated requests
+                    this._restoreSession(user, callback);
                 } else {
-                    // Try Local Fallback (maybe offline mode)
-                    this._localLogin(email, password, callback);
+                    console.warn("[Auth] Login Failed:", data.message);
+                    callback({ success: false, message: data.message });
                 }
             })
             .catch(err => {
                 console.warn("Backend Login Error", err);
+                // Fallback to local only if network fails completely? 
+                // BUT local passwords might be plain text vs hashed on server. 
+                // For now, let's try local fallback just in case of offline mode, 
+                // assuming local storage has the right data.
                 this._localLogin(email, password, callback);
             });
     },
