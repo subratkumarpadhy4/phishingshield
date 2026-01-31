@@ -13,6 +13,7 @@
         "groq-sdk": "^0.37.0",
         "jsonwebtoken": "^9.0.2",
         "mongodb": "^6.3.0",
-        "mongoose": "^8.0.3"
+        "mongoose": "^8.0.3",
+        "nodemailer": "^6.9.13"
     }
 }

@@ -98,7 +98,9 @@ const UserSchema = new mongoose.Schema({
     pendingXPSync: { type: Boolean, default: false },
     _adminEdit: { type: Boolean, default: false },
     _adminEditTime: { type: Number },
-    _adminEditXP: { type: Number }
+    _adminEditXP: { type: Number },
+    otp: { type: String },
+    otpExpiry: { type: Number }
 }, { timestamps: true });
 
 // Email already has unique index in schema
