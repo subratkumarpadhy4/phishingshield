@@ -18,7 +18,7 @@ console.log("-----------------------------------------");
 const PORT = process.env.PORT || 3000;
 
 // PERFORMANCE: Reduce logging in production
-const IS_PRODUCTION = !!process.env.RENDER;
+const IS_PRODUCTION = !!(process.env.RENDER || process.env.VERCEL);
 const log = IS_PRODUCTION ? () => { } : console.log;
 const logError = console.error; // Always log errors
 
@@ -71,7 +71,7 @@ function setCache(key, data) {
     queryCache.set(key, { data, timestamp: Date.now() });
 }
 // OPTIMIZATION: Background Sync Timer - Only run on LOCAL server, not on Render
-if (!process.env.RENDER) {
+if (!process.env.RENDER && !process.env.VERCEL) {
     setInterval(async () => {
         try {
             const localData = await readData(TRUST_FILE);
@@ -354,7 +354,7 @@ app.get('/api/trust/score', async (req, res) => {
     });
 
     // 2. Try Global Server (ASYNC - don't block response if local has data)
-    const globalFetchPromise = !process.env.RENDER ? (async () => {
+    const globalFetchPromise = !process.env.RENDER && !process.env.VERCEL ? (async () => {
         try {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 1500); // 1.5s timeout for faster response
@@ -654,7 +654,7 @@ app.post('/api/trust/vote', async (req, res) => {
 
     // --- GLOBAL SYNC (FORWARD WRITE) ---
     // Forward vote to global server immediately (don't wait, fire and forget)
-    if (!process.env.RENDER) {
+    if (!process.env.RENDER && !process.env.VERCEL) {
         console.log(`[Trust-Sync] [SEND] Forwarding vote to global server: ${normalizedDomain} = ${vote} (User: ${effectiveUserId})`);
         // Use effectiveUserId to ensure anonymous votes are tracked consistently globally
         fetchWithTimeout('https://phishingshield.onrender.com/api/trust/vote', {
@@ -739,7 +739,7 @@ app.get('/api/trust/all', async (req, res) => {
 
         // 2. Fetch Global Trust Data (WAIT for it with timeout, but don't block too long)
         // CRITICAL: Always fetch global data to ensure sync across devices
-        if (!process.env.RENDER) {
+        if (!process.env.RENDER && !process.env.VERCEL) {
             try {
                 log('[Trust] [SYNC] Fetching global trust data from https://phishingshield.onrender.com/api/trust/all...');
                 const fetchStart = Date.now();
@@ -891,7 +891,7 @@ app.get('/api/trust/all', async (req, res) => {
         res.json(mergedScores);
 
         // AUTO-REPAIR / SYNC-UP (Background - don't block)
-        if (!process.env.RENDER && localScores.length > 0) {
+        if (!process.env.RENDER && !process.env.VERCEL && localScores.length > 0) {
             // Run in background
             setImmediate(() => {
                 const globalScores = Array.from(mergedMap.values());
@@ -1007,7 +1007,7 @@ app.post('/api/trust/sync', async (req, res) => {
         const localData = await readData(TRUST_FILE);
 
         // 2. REAL SYNC: Push local data to global server
-        if (!process.env.RENDER) {
+        if (!process.env.RENDER && !process.env.VERCEL) {
             console.log(`[Trust-Sync] [PUSH] Starting full sync of ${localData.length} records to global server...`);
 
             // Push each entry to global seed endpoint
@@ -1064,7 +1064,7 @@ app.get('/api/logs/all', async (req, res) => {
         // 2. Fetch Global Logs
         let globalLogs = [];
         try {
-            if (!process.env.RENDER) {
+            if (!process.env.RENDER && !process.env.VERCEL) {
                 const response = await fetchWithTimeout('https://phishingshield.onrender.com/api/logs/all', {}, 2000);
                 if (response.ok) {
                     globalLogs = await response.json();
@@ -1121,7 +1121,7 @@ app.post('/api/logs', async (req, res) => {
     console.log(`[Logs] New threat log: ${log.hostname} (Score: ${log.score})`);
 
     // 2. Forward to global server
-    if (!process.env.RENDER) {
+    if (!process.env.RENDER && !process.env.VERCEL) {
         fetchWithTimeout('https://phishingshield.onrender.com/api/logs', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -1148,7 +1148,7 @@ app.get("/api/reports", async (req, res) => {
 
     // --- GLOBAL SYNC (FETCH UPDATES) ---
     // Ensure local server knows about global bans so banned.js doesn't auto-redirect
-    if (!process.env.RENDER) {
+    if (!process.env.RENDER && !process.env.VERCEL) {
         try {
             // Fetch global reports with short timeout
             const globalRes = await fetchWithTimeout('https://phishingshield.onrender.com/api/reports', {}, 2000);
@@ -1268,7 +1268,7 @@ app.post("/api/reports", async (req, res) => {
     console.log(`[Report] ${report.url} by ${report.reporter}`);
 
     // --- GLOBAL SYNC (FORWARD WRITE) ---
-    if (!process.env.RENDER) {
+    if (!process.env.RENDER && !process.env.VERCEL) {
         fetchWithTimeout('https://phishingshield.onrender.com/api/reports', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -2657,7 +2657,7 @@ app.post("/api/reports/update", async (req, res) => {
 
         // --- GLOBAL SYNC (FORWARD WRITE) ---
         // Fire and forget - don't block local success
-        if (!process.env.RENDER) {
+        if (!process.env.RENDER && !process.env.VERCEL) {
             fetchWithTimeout('https://phishingshield.onrender.com/api/reports/update', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -2692,7 +2692,7 @@ app.post("/api/reports/delete", async (req, res) => {
         console.log(`[Report] Deleted ${initialLen - reports.length} reports.`);
 
         // --- GLOBAL SYNC ---
-        if (!process.env.RENDER) {
+        if (!process.env.RENDER && !process.env.VERCEL) {
             fetchWithTimeout('https://phishingshield.onrender.com/api/reports/delete', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -2715,7 +2715,7 @@ app.get("/api/reports/global-sync", async (req, res) => {
         console.log(`[Global-Sync] Loaded ${localReports.length} local reports.`);
 
         // OPTIMIZATION: If we are the Global Server, we don't need to sync with ourselves.
-        if (process.env.RENDER) {
+        if (process.env.RENDER || process.env.VERCEL) {
             return res.json(localReports);
         }
 
@@ -2952,7 +2952,7 @@ app.get("/api/users/global-sync", async (req, res) => {
 
         console.log(`[User-Sync] Loaded ${localUsers.length} local users.`);
 
-        if (process.env.RENDER) {
+        if (process.env.RENDER || process.env.VERCEL) {
             console.log("[User-Sync] Global Server detected - returning local data only.");
             return res.json(localUsers);
         }
@@ -3065,9 +3065,15 @@ app.get('/api/domain-age', (req, res) => {
     });
 });
 
-// Start Server
-// Bind to 0.0.0.0 to accept connections from Render's network
-app.listen(PORT, "0.0.0.0", () => {
-    console.log(`PhishingShield Backend running on port ${PORT}`);
-    console.log(`Environment: ${process.env.NODE_ENV || "development"}`);
-});
+// Start Server (Only for non-serverless environments)
+// Vercel handles the server in serverless mode
+if (!process.env.VERCEL) {
+    // Bind to 0.0.0.0 to accept connections from Render's network
+    app.listen(PORT, "0.0.0.0", () => {
+        console.log(`PhishingShield Backend running on port ${PORT}`);
+        console.log(`Environment: ${process.env.NODE_ENV || "development"}`);
+    });
+}
+
+// Export for Vercel serverless functions
+module.exports = app;
