@@ -10,8 +10,18 @@ const db = require("./db");
 
 const app = express();
 
+// Root Route for Health Check
+app.get("/", (req, res) => {
+    res.json({
+        service: "Oculus Security Backend",
+        status: "Online 🟢",
+        version: "2.0.0",
+        message: "API is functioning correctly."
+    });
+});
+
 // Environment variables
-const JWT_SECRET = process.env.JWT_SECRET || 'phishingshield-secret-key';
+const JWT_SECRET = process.env.JWT_SECRET || 'oculus-secret-key';
 const EMAIL_USER = process.env.EMAIL_USER;
 const EMAIL_PASS = process.env.EMAIL_PASS;
 
