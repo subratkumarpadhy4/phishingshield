@@ -1362,7 +1362,7 @@ function syncReportsHeal() {
     });
 }
 // -----------------------------------------------------------------------------
-// SUSPICIOUS DOWNLOAD MONITOR & ANTIVIRUS SCANNER
+// SUSPICIOUS DOWNLOAD MONITOR & VIRUSTOTAL SCANNER
 // -----------------------------------------------------------------------------
 const DANGEROUS_EXTENSIONS = [
     'exe', 'scr', 'pif', 'bat', 'vbs', 'ps1', 'msi', 'com', 'cmd', 'js', 'gadget'
@@ -1479,7 +1479,7 @@ if (chrome.downloads && chrome.downloads.onCreated) {
     // Handle Notification Clicks
     chrome.notifications.onButtonClicked.addListener((notifId, btnIdx) => {
         if (btnIdx === 0) {
-            chrome.tabs.create({ url: "dashboard.html#tab-antivirus" });
+            chrome.tabs.create({ url: "dashboard.html#tab-virustotal" });
         }
     });
 

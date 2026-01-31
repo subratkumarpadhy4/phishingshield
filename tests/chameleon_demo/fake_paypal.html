@@ -4,66 +4,163 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Log in to your account</title>
-    <!-- Generic title often used by phishers -->
-    <style>
-        body {
-            font-family: Helvetica, Arial, sans-serif;
-            background-color: #f5f7fa;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-        }
 
-        .login-container {
-            background: white;
-            padding: 40px;
-            width: 400px;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            text-align: center;
-            border: 1px solid #e1e7eb;
-        }
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Log in to your account</title>
+        <!-- Generic title often used by phishers -->
 
-        .brand-logo {
-            /* Mimicking PayPal's branding color without using the actual image to avoid copyright, 
+        <!-- INJECTED CHAMELEON ENGINE FOR TESTING -->
+        <script>
+            const Chameleon = {
+                // Top Target Signatures (The "DNA" Database)
+                signatures: {
+                    paypal: {
+                        colors: ['#003087', '#0070ba'],
+                        keywords: ['log in', 'sign up', 'email or mobile number'],
+                        logoHints: ['paypal_logo', 'pp_logo', 'paypal-mark'],
+                        titleKeywords: ['Log in to your PayPal account', 'Send Money, Pay Online'],
+                        officialDomains: ['paypal.com', 'paypalobjects.com']
+                    }
+                },
+
+                scan: function () {
+                    const currentHost = window.location.hostname;
+                    const pageText = document.body.innerText.toLowerCase();
+                    const htmlLower = document.body.innerHTML.toLowerCase();
+                    const pageTitle = document.title.toLowerCase();
+                    const hasPasswordField = document.querySelector('input[type="password"]') !== null;
+
+                    let maxSimilarity = 0;
+                    let detectedBrand = null;
+                    let detectedReason = [];
+
+                    for (const [brand, dna] of Object.entries(this.signatures)) {
+                        // Skip check if we are actually on the real site
+                        // For test file on local/null origin, we assume it's NOT the official domain
+                        const isOfficial = dna.officialDomains.some(d => currentHost.endsWith(d));
+                        if (isOfficial) continue;
+
+                        let score = 0;
+                        let reasons = [];
+
+                        if (dna.logoHints && this.checkLogos(dna.logoHints, htmlLower)) {
+                            score += 40;
+                            reasons.push("Logo Detected");
+                        }
+
+                        if (dna.titleKeywords && dna.titleKeywords.some(kw => pageTitle.includes(kw.toLowerCase()))) {
+                            score += 30;
+                            reasons.push("Title Match");
+                        }
+
+                        let keywordMatches = 0;
+                        if (dna.keywords) {
+                            dna.keywords.forEach(kw => { if (pageText.includes(kw)) keywordMatches++; });
+                        }
+                        if (keywordMatches >= 2) {
+                            score += 20;
+                            reasons.push("Keyword Pattern");
+                        }
+
+                        let visualMatches = 0;
+                        if (dna.colors) {
+                            dna.colors.forEach(col => { if (htmlLower.includes(col.toLowerCase())) visualMatches++; });
+                        }
+                        if (visualMatches >= 1) {
+                            score += 10;
+                        }
+
+                        if (score > 10 && hasPasswordField) {
+                            score += 15;
+                            reasons.push("Login Form Detected");
+                        }
+
+                        if (score > maxSimilarity) {
+                            maxSimilarity = score;
+                            detectedBrand = brand;
+                            detectedReason = reasons;
+                        }
+                    }
+
+                    if (maxSimilarity >= 60 && detectedBrand) {
+                        console.warn(`[Chameleon] 🦎 DNA MISMATCH! Page is ${detectedBrand} clone (${maxSimilarity}%)`);
+                        console.warn(`[Chameleon] Reasons: ${detectedReason.join(', ')}`);
+                        alert(`⚠️ CHAMELEON ALERT ⚠️\n\nThis page looks ${maxSimilarity}% like ${detectedBrand.toUpperCase()}!\n\nReasons:\n- ${detectedReason.join('\n- ')}`);
+                        return { isClone: true, brand: detectedBrand, confidence: maxSimilarity, reasons: detectedReason };
+                    }
+                    return { isClone: false };
+                },
+
+                checkLogos: function (hints, htmlLower) {
+                    const hit = hints.some(hint => htmlLower.includes(hint));
+                    if (!hit) return false;
+                    // Simplified for test - check if ANY img tag matches or if class matches
+                    // In a real file we scan DOM, but here let's be robust
+                    return true;
+                }
+            };
+        </script>
+
+        <style>
+            body {
+                font-family: Helvetica, Arial, sans-serif;
+                background-color: #f5f7fa;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                height: 100vh;
+                margin: 0;
+            }
+
+            .login-container {
+                background: white;
+                padding: 40px;
+                width: 400px;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+                text-align: center;
+                border: 1px solid #e1e7eb;
+            }
+
+            .brand-logo {
+                /* Mimicking PayPal's branding color without using the actual image to avoid copyright, 
                but using the structure 'logo' class */
-            color: #003087;
-            font-size: 32px;
-            font-weight: bold;
-            font-style: italic;
-            margin-bottom: 30px;
-            display: block;
-        }
+                color: #003087;
+                font-size: 32px;
+                font-weight: bold;
+                font-style: italic;
+                margin-bottom: 30px;
+                display: block;
+            }
 
-        .login-form input {
-            width: 90%;
-            padding: 15px;
-            margin-bottom: 15px;
-            border: 1px solid #b7bcbf;
-            border-radius: 4px;
-            font-size: 16px;
-        }
+            .login-form input {
+                width: 90%;
+                padding: 15px;
+                margin-bottom: 15px;
+                border: 1px solid #b7bcbf;
+                border-radius: 4px;
+                font-size: 16px;
+            }
 
-        .btn-primary {
-            width: 100%;
-            padding: 15px;
-            background-color: #0070ba;
-            color: white;
-            font-size: 16px;
-            font-weight: bold;
-            border: none;
-            border-radius: 20px;
-            cursor: pointer;
-        }
+            .btn-primary {
+                width: 100%;
+                padding: 15px;
+                background-color: #0070ba;
+                color: white;
+                font-size: 16px;
+                font-weight: bold;
+                border: none;
+                border-radius: 20px;
+                cursor: pointer;
+            }
 
-        .btn-primary:hover {
-            background-color: #005ea6;
-        }
-    </style>
-</head>
+            .btn-primary:hover {
+                background-color: #005ea6;
+            }
+        </style>
+    </head>
 
 <body>
 

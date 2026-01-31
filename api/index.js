@@ -646,7 +646,7 @@ app.post("/api/send-otp", async (req, res) => {
     }
 });
 
-// ANTIVIRUS SCAN ENDPOINT (VirusTotal Proxy)
+// VIRUSTOTAL SCAN ENDPOINT (VirusTotal Proxy)
 app.post("/api/antivirus/scan", async (req, res) => {
     try {
         const { resource, type } = req.body; // resource = hash or url or query

@@ -4,8 +4,101 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Log in to your account</title>
+    <title>Log in to your PayPal account</title>
     <!-- Generic title often used by phishers -->
+
+    <!-- INJECTED CHAMELEON ENGINE FOR TESTING -->
+    <script>
+        const Chameleon = {
+            // Top Target Signatures (The "DNA" Database)
+            signatures: {
+                paypal: {
+                    colors: ['#003087', '#0070ba'],
+                    keywords: ['log in', 'sign up', 'email or mobile number'],
+                    logoHints: ['paypal_logo', 'pp_logo', 'paypal-mark'],
+                    titleKeywords: ['Log in to your PayPal account', 'Send Money, Pay Online'],
+                    officialDomains: ['paypal.com', 'paypalobjects.com']
+                }
+            },
+
+            scan: function () {
+                const currentHost = window.location.hostname;
+                const pageText = document.body.innerText.toLowerCase();
+                const htmlLower = document.body.innerHTML.toLowerCase();
+                const pageTitle = document.title.toLowerCase();
+                const hasPasswordField = document.querySelector('input[type="password"]') !== null;
+
+                let maxSimilarity = 0;
+                let detectedBrand = null;
+                let detectedReason = [];
+
+                for (const [brand, dna] of Object.entries(this.signatures)) {
+                    // Skip check if we are actually on the real site
+                    // For test file on local/null origin, we assume it's NOT the official domain
+                    const isOfficial = dna.officialDomains.some(d => currentHost.endsWith(d));
+                    if (isOfficial) continue;
+
+                    let score = 0;
+                    let reasons = [];
+
+                    if (dna.logoHints && this.checkLogos(dna.logoHints, htmlLower)) {
+                        score += 40;
+                        reasons.push("Logo Detected");
+                    }
+
+                    if (dna.titleKeywords && dna.titleKeywords.some(kw => pageTitle.includes(kw.toLowerCase()))) {
+                        score += 30;
+                        reasons.push("Title Match");
+                    }
+
+                    let keywordMatches = 0;
+                    if (dna.keywords) {
+                        dna.keywords.forEach(kw => { if (pageText.includes(kw)) keywordMatches++; });
+                    }
+                    if (keywordMatches >= 2) {
+                        score += 20;
+                        reasons.push("Keyword Pattern");
+                    }
+
+                    let visualMatches = 0;
+                    if (dna.colors) {
+                        dna.colors.forEach(col => { if (htmlLower.includes(col.toLowerCase())) visualMatches++; });
+                    }
+                    if (visualMatches >= 1) {
+                        score += 10;
+                    }
+
+                    if (score > 10 && hasPasswordField) {
+                        score += 15;
+                        reasons.push("Login Form Detected");
+                    }
+
+                    console.log(`[Chameleon Debug] ${brand} Score: ${score}`, reasons);
+
+                    if (score > maxSimilarity) {
+                        maxSimilarity = score;
+                        detectedBrand = brand;
+                        detectedReason = reasons;
+                    }
+                }
+
+                if (maxSimilarity >= 60 && detectedBrand) {
+                    console.warn(`[Chameleon] 🦎 DNA MISMATCH! Page is ${detectedBrand} clone (${maxSimilarity}%)`);
+                    console.warn(`[Chameleon] Reasons: ${detectedReason.join(', ')}`);
+                    alert(`⚠️ CHAMELEON ALERT ⚠️\n\nThis page looks ${maxSimilarity}% like ${detectedBrand.toUpperCase()}!\n\nReasons:\n- ${detectedReason.join('\n- ')}`);
+                    return { isClone: true, brand: detectedBrand, confidence: maxSimilarity, reasons: detectedReason };
+                }
+                return { isClone: false };
+            },
+
+            checkLogos: function (hints, htmlLower) {
+                const hit = hints.some(hint => htmlLower.includes(hint));
+                if (!hit) return false;
+                return true;
+            }
+        };
+    </script>
+
     <style>
         body {
             font-family: Helvetica, Arial, sans-serif;
@@ -36,6 +129,11 @@
             font-style: italic;
             margin-bottom: 30px;
             display: block;
+        }
+
+        /* HIDDEN LOGO CLASS FOR DETECTION TEST */
+        .paypal-logo {
+            display: inline-block;
         }
 
         .login-form input {
