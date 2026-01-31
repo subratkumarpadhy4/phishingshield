@@ -340,13 +340,14 @@ app.post("/api/reports/ai-verify", async (req, res) => {
                 }
 
                 analysisResult = {
-                    riskScore: score,
+                    riskScore: score, // Standardized name
+                    score: score,     // Frontend compatibility (admin.js expects .score)
                     riskLevel: (parsed.classification || 'unknown').toLowerCase(),
                     summary: parsed.summary || "No summary provided",
                     details: parsed.reasons || [],
                     // Frontend Mapping
-                    suggestion: (score > 75 || parsed.classification?.match(/malicious/i)) ? 'BAN' :
-                        ((score > 30 || parsed.classification?.match(/suspicious/i)) ? 'CAUTION' : 'SAFE'),
+                    suggestion: (score > 75 || riskLevel.includes('malicious')) ? 'BAN' :
+                        ((score > 30 || riskLevel.includes('suspicious')) ? 'CAUTION' : 'SAFE'),
                     reason: (parsed.summary || "") + "\n\n" + (parsed.reasons || []).join("\n")
                 };
             } catch (err) {

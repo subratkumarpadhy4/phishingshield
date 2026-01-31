@@ -2193,7 +2193,7 @@ function openReportModal(report) {
 
     function renderAIResult(analysis) {
         aiResult.style.display = 'block';
-        const score = analysis.phishing_risk_score || analysis.score || 0;
+        const score = analysis.riskScore || analysis.score || analysis.phishing_risk_score || 0;
         const suggestion = analysis.suggestion;
 
         document.getElementById('ai-score').textContent = `Risk Score: ${score}/100`;
