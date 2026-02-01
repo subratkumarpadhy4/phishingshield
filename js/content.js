@@ -167,9 +167,12 @@ function initRiskAnalysis(isFortressMode) {
 
     chrome.storage.local.get(['userLevel'], async (data) => {
         const userLevel = data.userLevel || 1;
-        const enableQR = userLevel >= 5;       // Unlocks at SCOUT Rank
-        const enableML = userLevel >= 10;      // Unlocks at CYBER NINJA (Level 10)
-        const enableChameleon = userLevel >= 20; // Unlocks at SENTINEL Rank
+        // const enableQR = userLevel >= 5;       // Unlocks at SCOUT Rank
+        const enableQR = true;
+        // const enableML = userLevel >= 10;      // Unlocks at CYBER NINJA (Level 10)
+        const enableML = true;
+        // const enableChameleon = userLevel >= 20; // Unlocks at SENTINEL Rank
+        const enableChameleon = true;
 
         // Configure Risk Engine Locks
         if (typeof RiskEngine !== 'undefined' && RiskEngine.configure) {
