@@ -227,10 +227,23 @@ Oculus relies on powerful AI engines. You need valid keys for them to work.
 | **VirusTotal API** | URL & File reputation | **Free** | [VirusTotal API](https://www.virustotal.com/) |
 | **MongoDB Atlas** | Database for Users/Trust | **Free** | [MongoDB Atlas](https://www.mongodb.com/atlas) |
 
-### 🖥️ 3. Backend API Setup
-The backend is **already deployed on Vercel** (Serverless) for global availability, but you can run a **local instance** for testing and development.
+### ⚡ Judges & Quick Start (No Server Setup Needed!)
+The extension is **pre-configured** to use our live Vercel backend. You do **NOT** need to install Node.js or run the server to test the extension.
 
+1.  **Download the Code**: Click "Code" -> "Download ZIP" on GitHub and unzip it.
+2.  **Load Extension**:
+    *   Open Chrome -> `chrome://extensions`
+    *   Enable **Developer Mode** (Top right).
+    *   Click **Load Unpacked**.
+    *   Select the **root folder** of the unzipped project.
+3.  **Test**: Open `tests/ai_phishing_test.html` or any site to see it in action!
 
+---
+
+### 🖥️ 3. Backend API Setup (Optional / For Developers)
+*Only follow this if you want to run your own local server instance.*
+
+The backend handles AI requests, user accounts, and global sync.
 ```bash
 # 1. Clone the repository
 git clone https://github.com/subratkumarpadhy4/Oculus.git
