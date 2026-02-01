@@ -206,6 +206,15 @@ How the community keeps the ecosystem clean.
     *   **Level 20**: Chameleon Mode.
 *   **Penalties**: Lose XP for visiting banned sites.
 
+### 9. 📧 AI Gmail Sentinel (Advanced)
+*   **AI CSI for Emails**: Uses LLMs (Groq/Gemini) to perform "Forensic Analysis" on emails.
+    *   **Contextual Spoof Detection**: If an email claims to be "PayPal Support", the AI checks the sender address against the *known* legitimate domains for PayPal. "Is `security@paypal-support.xyz` valid? -> AI says: **NO**."
+    *   **Content Analysis**: Reads the email body to detect urgency, grammar traps, and suspicious requests.
+*   **Attachment Scanner**:
+    *   **Privacy First**: Hash-based VirusTotal lookup.
+    *   **Zero-Knowledge**: Files verify without ever leaving your computer.
+
+
 ---
 
 ## 🛠️ Installation & Setup

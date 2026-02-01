@@ -1,14 +1,19 @@
 // Vercel Serverless API - PhishingShield Backend
 const express = require("express");
+const app = express();
 const cors = require("cors");
 const bodyParser = require("body-parser");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
 const axios = require("axios");
+const dotenv = require("dotenv");
 const db = require("./db");
 
-const app = express();
+console.log("Starting Server...");
+process.on('uncaughtException', (err) => {
+    console.error('UNCAUGHT EXCEPTION:', err);
+});
 
 // Root Route for Health Check
 app.get("/", (req, res) => {
@@ -537,6 +542,94 @@ app.post("/api/ai/scan", async (req, res) => {
     }
 });
 
+// NEW: Email Forensics Endpoint
+app.post("/api/ai/analyze-email", async (req, res) => {
+    try {
+        const { senderName, senderEmail, content } = req.body;
+        console.log(`[AI Email] Analyzing email from "${senderName}" <${senderEmail}>`);
+
+        // Default to Groq for complex reasoning
+        let responseJson = {
+            isSpoofed: false,
+            legitimateDomain: "unknown",
+            riskScore: 0,
+            reason: "Could not analyze"
+        };
+
+        const prompt = `
+        You are a Cybersecurity Forensic Expert.
+        
+        Task 1: Identify the legitimate domain for the brand claimed in the sender name: "${senderName}".
+        Task 2: Check if the sender email "${senderEmail}" matches that legitimate domain.
+        Task 3: Analyze the email body content for phishing triggers (urgency, bad grammar, suspicious link requests).
+        
+        Content Snippet: "${content ? content.substring(0, 1000) : 'No content'}"
+        
+        Return JSON ONLY:
+        {
+            "claimed_brand": "Brand Name (e.g. PayPal)",
+            "legitimate_domain": "paypal.com",
+            "is_spoofed": boolean,
+            "risk_score": 0-100,
+            "warning_message": "Short warning for user if dangerous",
+            "analysis": "Brief explanation"
+        }
+        `;
+
+        if (GROQ_API_KEY) {
+            try {
+                const groq = new Groq({ apiKey: GROQ_API_KEY });
+                const completion = await groq.chat.completions.create({
+                    messages: [{ role: "user", content: prompt }],
+                    model: "llama-3.3-70b-versatile",
+                    response_format: { type: "json_object" }
+                });
+
+                const content = completion.choices[0]?.message?.content;
+                if (content) responseJson = JSON.parse(content);
+
+            } catch (err) {
+                console.error("[AI Email] Groq Failed:", err);
+                if (!GEMINI_API_KEY) throw err;
+            }
+        }
+
+        // Fallback to Gemini
+        if (responseJson.riskScore === 0 && GEMINI_API_KEY) {
+            try {
+                const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+                const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+                const result = await model.generateContent(prompt);
+                const text = result.response.text();
+                const jsonMatch = text.match(/```json\n([\s\S]*?)\n```/) || text.match(/\{[\s\S]*\}/);
+                if (jsonMatch) responseJson = JSON.parse(jsonMatch[1] || jsonMatch[0]);
+            } catch (err) {
+                console.error("[AI Email] Gemini Failed:", err);
+            }
+        }
+
+        // --- MOCK FALLBACK (If no keys or both failed) ---
+        if (responseJson.riskScore === 0 && !GROQ_API_KEY && !GEMINI_API_KEY) {
+            console.warn("[AI Email] No API Keys! Using SIMULATED response.");
+            responseJson = {
+                claimed_brand: "Unknown (Simulated)",
+                legitimate_domain: "example.com",
+                is_spoofed: false,
+                risk_score: 15,
+                warning_message: "Simulated Safe Response",
+                analysis: "This is a simulated response because the local server has no API keys. The email appears safe in this demo mode."
+            };
+        }
+        // ------------------------------------------------
+
+        res.json({ success: true, analysis: responseJson });
+
+    } catch (error) {
+        console.error("[AI Email] Error:", error.message);
+        res.status(500).json({ error: "Email Analysis Failed" });
+    }
+});
+
 app.get("/api/trust/score", async (req, res) => {
     try {
         await db.connectDB();
@@ -880,3 +973,10 @@ app.get("/api/leaderboard", async (req, res) => {
 
 // Export for Vercel
 module.exports = app;
+
+if (require.main === module) {
+    const PORT = process.env.PORT || 3000;
+    app.listen(PORT, () => {
+        console.log(`Server running on port ${PORT} 🚀`);
+    });
+}

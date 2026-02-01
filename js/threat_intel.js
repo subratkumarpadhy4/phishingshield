@@ -5,7 +5,7 @@
  */
 
 if (typeof window.DEV_MODE === 'undefined') {
-    window.DEV_MODE = false;
+    window.DEV_MODE = false; // CONNECT TO VERCEL (Production)
 }
 var DEV_MODE = window.DEV_MODE;
 const GLOBAL_API = "https://oculus-eight.vercel.app/api";
@@ -138,6 +138,56 @@ const ThreatIntel = {
         } catch (e) {
             console.error("[ThreatIntel] Failed to vote", e);
             return { success: false, message: e.message || "Network error. Is server running?" };
+        }
+    },
+
+    /**
+     * Scan a resource (File Hash or URL) using VirusTotal API via Backend
+     * @param {string} resource - The hash (SHA256) or URL to scan
+     * @param {string} type - 'file' or 'url'
+     */
+    scanResource: async function (resource, type) {
+        try {
+            console.log(`[ThreatIntel] Scanning ${type}: ${resource} ...`);
+            const res = await fetch(`${this.backendUrl}/antivirus/scan`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ resource, type })
+            });
+            const data = await res.json();
+            return data;
+        } catch (e) {
+            console.error("[ThreatIntel] Scan failed:", e);
+            return { success: false, error: e.message };
+        }
+    },
+
+    /**
+     * Analyze Email Metadata & Content via Backend AI
+     */
+    analyzeEmail: async function (data) { // data = { senderName, senderEmail, content }
+        try {
+            console.log(`[ThreatIntel] Analyzing email...`);
+
+            // Setup Timeout (15 seconds max)
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+            const res = await fetch(`${this.backendUrl}/ai/analyze-email`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+                signal: controller.signal
+            });
+
+            clearTimeout(timeoutId);
+
+            if (!res.ok) throw new Error(`Server Error: ${res.status}`);
+            return await res.json();
+        } catch (e) {
+            console.error("[ThreatIntel] Email analysis failed:", e);
+            if (e.name === 'AbortError') return { success: false, error: 'Timeout: AI took too long.' };
+            return { success: false, error: e.message };
         }
     }
 };

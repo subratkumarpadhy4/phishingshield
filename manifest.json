@@ -51,6 +51,15 @@
         "css/styles.css"
       ],
       "run_at": "document_end"
+    },
+    {
+      "matches": [
+        "https://mail.google.com/*"
+      ],
+      "js": [
+        "js/gmailSentinel.js"
+      ],
+      "run_at": "document_idle"
     }
   ],
   "web_accessible_resources": [
