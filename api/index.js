@@ -557,22 +557,34 @@ app.post("/api/ai/analyze-email", async (req, res) => {
         };
 
         const prompt = `
-        You are a Cybersecurity Forensic Expert.
-        
-        Task 1: Identify the legitimate domain for the brand claimed in the sender name: "${senderName}".
-        Task 2: Check if the sender email "${senderEmail}" matches that legitimate domain.
-        Task 3: Analyze the email body content for phishing triggers (urgency, bad grammar, suspicious link requests).
-        
-        Content Snippet: "${content ? content.substring(0, 1000) : 'No content'}"
-        
-        Return JSON ONLY:
+        You are a tiered Cybersecurity Forensic Expert.
+
+        **Input Data**:
+        - Sender Name: "${senderName}"
+        - Sender Email: "${senderEmail}"
+        - Content Snippet: "${content ? content.substring(0, 1000) : 'No content'}"
+
+        **Validation Rules (Strict)**:
+        1. **Identify Brand**: Extract the brand from the Sender Name (e.g., "Coursera", "Google"). If the name is personal (e.g., "John Doe"), check the content/signature for a brand affiliation.
+        2. **Official Domain Check**: Identify the root official domain (e.g., "coursera.org").
+        3. **Subdomain Matching**: 
+           - Does the sender email domain answer to the official root? 
+           - Example: "m.learn.coursera.org" DOES match "coursera.org". "notifications.google.com" DOES match "google.com".
+           - IF MATCH: **is_spoofed = false**. 
+        4. **Scoring**:
+           - **VERIFIED MATCH**: If the domain matches a known brand -> **Risk Score MUST be < 10** (unless content explicitly asks for passwords/money).
+           - **MISMATCH**: If claims to be "PayPal" but email is "paypal-support-team.com" -> **Risk Score > 85** (Spoofing).
+           - **GENERIC**: If no specific brand is claimed, analyze content for urgency/threats.
+
+        **Output Requirements**:
+        Return JSON ONLY.
         {
-            "claimed_brand": "Brand Name (e.g. PayPal)",
-            "legitimate_domain": "paypal.com",
+            "claimed_brand": "Detected Brand Name",
+            "legitimate_domain": "The Official Root Domain",
             "is_spoofed": boolean,
-            "risk_score": 0-100,
-            "warning_message": "Short warning for user if dangerous",
-            "analysis": "Brief explanation"
+            "risk_score": integer (0-100),
+            "warning_message": "Short status (e.g., '✅ Trusted Sender', '❌ Domain Mismatch', '⚠️ Suspicious Content')",
+            "analysis": "Concise explanation. Mention IF the subdomain matches the root domain explicitly."
         }
         `;
 
