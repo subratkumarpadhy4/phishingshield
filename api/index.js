@@ -240,16 +240,28 @@ app.post("/api/users/login", async (req, res) => {
 app.post("/api/users/sync", async (req, res) => {
     try {
         await db.connectDB();
-        const { email, xp, level, lastUpdated } = req.body;
+        const { email, xp, level, lastUpdated, forceUpdate } = req.body;
 
-        const user = await db.User.findOneAndUpdate(
-            { email: email.toLowerCase() },
-            { xp, level, lastUpdated: lastUpdated || Date.now() },
-            { new: true }
-        );
+        let user = await db.User.findOne({ email: email.toLowerCase() });
 
         if (!user) {
             return res.status(404).json({ success: false, message: "User not found" });
+        }
+
+        const incomingTime = Number(lastUpdated) || Date.now();
+        const serverTime = Number(user.lastUpdated) || 0;
+
+        // Strict Sync Logic: Only update if incoming is newer OR it's a forced update (Admin)
+        if (incomingTime > serverTime || forceUpdate) {
+            user.xp = (xp !== undefined) ? xp : user.xp;
+            user.level = level || user.level;
+            // Ensure we store the timestamp provided (crucial for admin future-dating)
+            user.lastUpdated = incomingTime;
+
+            await user.save();
+            console.log(`[API] Sync Accepted for ${email}: ${serverTime} -> ${incomingTime} (New XP: ${user.xp})`);
+        } else {
+            console.log(`[API] Sync Ignored for ${email}: Incoming(${incomingTime}) <= Server(${serverTime}). Keeping Server XP: ${user.xp}`);
         }
 
         res.json({ success: true, user: { email: user.email, xp: user.xp, level: user.level, lastUpdated: user.lastUpdated } });
