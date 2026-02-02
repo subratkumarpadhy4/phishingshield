@@ -466,7 +466,7 @@ app.post("/api/ai/extensions/analyze", async (req, res) => {
         // Use Gemini if available
         if (GEMINI_API_KEY) {
             const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-            const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
             const result = await model.generateContent(prompt);
             const response = result.response;
             const text = response.text();
