@@ -917,14 +917,7 @@ function loadDashboardData() {
 
                 // 2. Delete from Server
                 try {
-                    let serverUrl = 'https://oculus-eight.vercel.app/api/reports/delete';
-                    // Simple connectivity check
-                    try {
-                        await fetch('https://oculus-eight.vercel.app/api/users', { method: 'HEAD', signal: AbortSignal.timeout(1000) });
-                    } catch (e) {
-                        // If Local fails, try Global
-                        serverUrl = 'https://oculus-eight.vercel.app/api/reports/delete';
-                    }
+                    const serverUrl = `${API_BASE}/reports/delete`;
 
                     const response = await fetch(serverUrl, {
                         method: 'POST',
@@ -1132,56 +1125,7 @@ function renderReports(reports) {
 
         const date = r.timestamp ? new Date(r.timestamp).toLocaleDateString() : 'Unknown';
 
-        // --- SYSTEM SYNC LOGIC ---
-        function checkServerStatus() {
-            console.log("[System Sync] Checking connectivity...");
 
-            // UI Elements
-            const syncValue = document.getElementById('stats-sync-value');
-            const syncStatus = document.getElementById('stats-sync-status');
-
-            if (!syncValue || !syncStatus) return;
-
-            let localOnline = false;
-            let globalOnline = false;
-
-            // 1. Check Local Server
-            const checkLocal = fetch('https://oculus-eight.vercel.app/api/reports', { method: 'HEAD' })
-                .then(res => { localOnline = res.ok; })
-                .catch(() => { localOnline = false; });
-
-            // 2. Check Global Server
-            const checkGlobal = fetch('https://oculus-eight.vercel.app/api/reports', { method: 'HEAD' })
-                .then(res => { globalOnline = res.ok; })
-                .catch(() => { globalOnline = false; });
-
-            // Execute Both
-            Promise.allSettled([checkLocal, checkGlobal]).then(() => {
-                console.log(`[System Sync] Local: ${localOnline}, Global: ${globalOnline}`);
-
-                if (localOnline && globalOnline) {
-                    // 100%
-                    syncValue.textContent = "100%";
-                    syncValue.style.color = "#166534"; // green
-                    syncStatus.innerHTML = `✅ <strong>All Systems Online</strong>`;
-                } else if (!localOnline && !globalOnline) {
-                    // 0%
-                    syncValue.textContent = "0%";
-                    syncValue.style.color = "#dc3545"; // red
-                    syncStatus.innerHTML = `❌ <strong>System Blackout</strong>`;
-                } else {
-                    // 50%
-                    syncValue.textContent = "50%";
-                    syncValue.style.color = "#d97706"; // orange
-
-                    if (localOnline) {
-                        syncStatus.innerHTML = `⚠️ <strong>Local Only</strong> (Global Offline)`;
-                    } else {
-                        syncStatus.innerHTML = `⚠️ <strong>Global Only</strong> (Local Offline)`;
-                    }
-                }
-            });
-        }
         const status = r.status || 'pending';
 
         // Escape HTML to prevent XSS
@@ -2551,47 +2495,27 @@ function checkServerStatus() {
     // UI Elements
     const syncValue = document.getElementById('stats-sync-value');
     const syncStatus = document.getElementById('stats-sync-status');
+    // Ensure API_BASE is consistent
+    const endpoint = (window.API_BASE || "https://oculus-eight.vercel.app/api");
 
     if (!syncValue || !syncStatus) return;
 
-    let localOnline = false;
-    let globalOnline = false;
-
-    // 1. Check Local Server
-    const checkLocal = fetch('https://oculus-eight.vercel.app/api/reports', { method: 'HEAD' })
-        .then(res => { localOnline = res.ok; })
-        .catch(() => { localOnline = false; });
-
-    // 2. Check Global Server
-    const checkGlobal = fetch('https://oculus-eight.vercel.app/api/reports', { method: 'HEAD' })
-        .then(res => { globalOnline = res.ok; })
-        .catch(() => { globalOnline = false; });
-
-    // Execute Both
-    Promise.allSettled([checkLocal, checkGlobal]).then(() => {
-        console.log(`[System Sync] Local: ${localOnline}, Global: ${globalOnline}`);
-
-        if (localOnline && globalOnline) {
-            // 100%
-            syncValue.textContent = "100%";
-            syncValue.style.color = "#166534"; // green
-            syncStatus.innerHTML = `✅ <strong>All Systems Online</strong>`;
-        } else if (!localOnline && !globalOnline) {
-            // 0%
+    fetch(endpoint, { method: 'HEAD' })
+        .then(res => {
+            if (res.ok) {
+                // Online
+                syncValue.textContent = "100%";
+                syncValue.style.color = "#166534"; // green
+                syncStatus.innerHTML = `✅ <strong>System Online</strong>`;
+            } else {
+                throw new Error("API Error");
+            }
+        })
+        .catch(() => {
+            // Offline
             syncValue.textContent = "0%";
             syncValue.style.color = "#dc3545"; // red
-            syncStatus.innerHTML = `❌ <strong>System Blackout</strong>`;
-        } else {
-            // 50%
-            syncValue.textContent = "50%";
-            syncValue.style.color = "#d97706"; // orange
-
-            if (localOnline) {
-                syncStatus.innerHTML = `⚠️ <strong>Local Only</strong> (Global Offline)`;
-            } else {
-                syncStatus.innerHTML = `⚠️ <strong>Global Only</strong> (Local Offline)`;
-            }
-        }
-    });
+            syncStatus.innerHTML = `❌ <strong>System Offline</strong> (API Unreachable)`;
+        });
 }
 

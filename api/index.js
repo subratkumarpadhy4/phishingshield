@@ -226,7 +226,8 @@ app.post("/api/users/login", async (req, res) => {
                 email: user.email,
                 name: user.name,
                 xp: user.xp,
-                level: user.level
+                level: user.level,
+                lastUpdated: user.lastUpdated
             },
             token
         });
@@ -251,7 +252,7 @@ app.post("/api/users/sync", async (req, res) => {
             return res.status(404).json({ success: false, message: "User not found" });
         }
 
-        res.json({ success: true, user: { email: user.email, xp: user.xp, level: user.level } });
+        res.json({ success: true, user: { email: user.email, xp: user.xp, level: user.level, lastUpdated: user.lastUpdated } });
     } catch (error) {
         console.error('[API] Sync error:', error);
         res.status(500).json({ error: error.message });
