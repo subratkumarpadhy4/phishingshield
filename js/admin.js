@@ -1127,13 +1127,7 @@ function renderReports(reports) {
 
         const date = r.timestamp ? new Date(r.timestamp).toLocaleDateString() : 'Unknown';
 
-<<<<<<< Updated upstream
-
-=======
         // Render Logic for Report Row
-
-
->>>>>>> Stashed changes
         const status = r.status || 'pending';
 
         // Escape HTML to prevent XSS
@@ -2523,23 +2517,8 @@ function checkServerStatus() {
             // Offline
             syncValue.textContent = "0%";
             syncValue.style.color = "#dc3545"; // red
-<<<<<<< Updated upstream
-            syncStatus.innerHTML = `❌ <strong>System Offline</strong> (API Unreachable)`;
-        });
-=======
             syncStatus.innerHTML = `❌ <strong>System Blackout</strong>`;
-        } else {
-            // 50%
-            syncValue.textContent = "50%";
-            syncValue.style.color = "#d97706"; // orange
-
-            if (localOnline) {
-                syncStatus.innerHTML = `⚠️ <strong>Local Only</strong> (Global Offline)`;
-            } else {
-                syncStatus.innerHTML = `⚠️ <strong>Global Only</strong> (Local Offline)`;
-            }
-        }
-    }); // Close Promise.allSettled
+        });
 } // Close checkServerStatus function
 
 // --- GLOBAL THREAT MAP LOGIC ---
@@ -2571,7 +2550,7 @@ async function initThreatMap() {
     let realReports = [];
 
     try {
-        const response = await fetch(`${API_URL}/api/reports`);
+        const response = await fetch(`${API_BASE}/reports`);
         if (response.ok) {
             const reports = await response.json();
             realReports = reports;
@@ -2721,5 +2700,4 @@ async function initThreatMap() {
             globeInstance.height(container.clientHeight);
         }
     });
->>>>>>> Stashed changes
 }
