@@ -43,6 +43,16 @@
         <!-- VIEW: DASHBOARD -->
         <div id="view-dashboard" class="content-area">
 
+            <!-- Incognito Warning (Hidden by default) -->
+            <div id="incognito-warning" class="warning-banner"
+                style="display: none; background: #fff3cd; color: #856404; padding: 12px; margin: 0 0 15px 0; border-radius: 8px; font-size: 13px; border: 1px solid #ffeeba;">
+                <div style="font-weight: 600; margin-bottom: 4px;">⚠️ Incognito Not Protected</div>
+                <div style="margin-bottom: 8px;">Enable "Allow in Incognito" to stay safe.</div>
+                <button id="btn-enable-incognito"
+                    style="background: #856404; color: white; border: none; padding: 6px 12px; border-radius: 4px; font-size: 11px; cursor: pointer; width: 100%;">Enable
+                    Now</button>
+            </div>
+
             <!-- Hero Status -->
             <div class="hero-section">
                 <div class="shield-container secure" id="status-icon">

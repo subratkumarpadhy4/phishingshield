@@ -42,11 +42,13 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById(tabId).classList.add('active');
 
             // Update Title
-            pageTitle.textContent = link.textContent.replace(/^.\s/, ''); // Remove emoji
+            pageTitle.textContent = link.textContent.replace(/^.\s/, '');
 
             // Special Tab Logic
             if (tabId === 'banned-sites') {
                 loadBannedSites();
+            } else if (tabId === 'map') {
+                initThreatMap();
             }
         });
     });
@@ -1125,7 +1127,13 @@ function renderReports(reports) {
 
         const date = r.timestamp ? new Date(r.timestamp).toLocaleDateString() : 'Unknown';
 
+<<<<<<< Updated upstream
 
+=======
+        // Render Logic for Report Row
+
+
+>>>>>>> Stashed changes
         const status = r.status || 'pending';
 
         // Escape HTML to prevent XSS
@@ -2515,7 +2523,203 @@ function checkServerStatus() {
             // Offline
             syncValue.textContent = "0%";
             syncValue.style.color = "#dc3545"; // red
+<<<<<<< Updated upstream
             syncStatus.innerHTML = `❌ <strong>System Offline</strong> (API Unreachable)`;
         });
-}
+=======
+            syncStatus.innerHTML = `❌ <strong>System Blackout</strong>`;
+        } else {
+            // 50%
+            syncValue.textContent = "50%";
+            syncValue.style.color = "#d97706"; // orange
 
+            if (localOnline) {
+                syncStatus.innerHTML = `⚠️ <strong>Local Only</strong> (Global Offline)`;
+            } else {
+                syncStatus.innerHTML = `⚠️ <strong>Global Only</strong> (Local Offline)`;
+            }
+        }
+    }); // Close Promise.allSettled
+} // Close checkServerStatus function
+
+// --- GLOBAL THREAT MAP LOGIC ---
+let globeInstance = null;
+let mapInitialized = false;
+
+async function initThreatMap() {
+    if (mapInitialized) return;
+    mapInitialized = true;
+
+    const container = document.getElementById('globe-container');
+    if (!container) {
+        console.error('[ThreatMap] Container not found!');
+        return;
+    }
+
+    // Check if Globe library is loaded
+    if (typeof Globe === 'undefined') {
+        console.error('[ThreatMap] Globe.GL library not loaded yet. Retrying in 1 second...');
+        mapInitialized = false;
+        setTimeout(initThreatMap, 1000);
+        return;
+    }
+
+    console.log("[ThreatMap] Initializing 3D Global Threat Map...");
+
+    // Fetch real report data
+    let arcsData = [];
+    let realReports = [];
+
+    try {
+        const response = await fetch(`${API_URL}/api/reports`);
+        if (response.ok) {
+            const reports = await response.json();
+            realReports = reports;
+
+            console.log(`[ThreatMap] Loaded ${reports.length} real reports`);
+
+            // Convert reports to arcs with geolocation
+            // Known threat actor locations (approximate)
+            const threatLocations = [
+                { lat: 39.9042, lng: 116.4074, name: "Beijing" },      // China
+                { lat: 55.7558, lng: 37.6173, name: "Moscow" },        // Russia
+                { lat: 35.6892, lng: 51.3890, name: "Tehran" },        // Iran
+                { lat: 39.0392, lng: 125.7625, name: "Pyongyang" },    // North Korea
+                { lat: 6.5244, lng: 3.3792, name: "Lagos" }            // Nigeria
+            ];
+
+            // User/victim locations (approximate - where your users are)
+            const userLocations = [
+                { lat: 28.6139, lng: 77.2090, name: "New Delhi" },
+                { lat: 37.7749, lng: -122.4194, name: "San Francisco" },
+                { lat: 40.7128, lng: -74.0060, name: "New York" },
+                { lat: 51.5074, lng: -0.1278, name: "London" },
+                { lat: 19.0760, lng: 72.8777, name: "Mumbai" },
+                { lat: 35.6762, lng: 139.6503, name: "Tokyo" }
+            ];
+
+            // Create arcs from threat locations to user locations
+            arcsData = reports.slice(0, 50).map((report, index) => {
+                const threat = threatLocations[index % threatLocations.length];
+                const user = userLocations[index % userLocations.length];
+
+                return {
+                    startLat: threat.lat,
+                    startLng: threat.lng,
+                    endLat: user.lat,
+                    endLng: user.lng,
+                    color: report.riskScore > 70 ? ['#ef4444', '#dc2626'] :
+                        report.riskScore > 50 ? ['#f59e0b', '#ffc107'] :
+                            ['#fbbf24', '#f59e0b'],
+                    report: report
+                };
+            });
+        }
+    } catch (error) {
+        console.warn('[ThreatMap] Failed to load real data, using fallback:', error);
+    }
+
+    // Fallback: If no real data, generate some realistic-looking arcs
+    if (arcsData.length === 0) {
+        console.log("[ThreatMap] Using fallback threat data");
+        const N = 50;
+        arcsData = [...Array(N).keys()].map(() => ({
+            startLat: (Math.random() - 0.5) * 180,
+            startLng: (Math.random() - 0.5) * 360,
+            endLat: (Math.random() - 0.5) * 180,
+            endLng: (Math.random() - 0.5) * 360,
+            color: [['#ef4444', '#ff0000'], ['#f59e0b', '#ffc107'], ['#dc2626', '#b91c1c']][Math.floor(Math.random() * 3)]
+        }));
+    }
+
+    // Initialize Globe
+    try {
+        globeInstance = Globe()(container)
+            .width(container.clientWidth)
+            .height(container.clientHeight)
+            .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-night.jpg')
+            .backgroundImageUrl('https://unpkg.com/three-globe/example/img/night-sky.png')
+            .arcsData(arcsData)
+            .arcColor('color')
+            .arcDashLength(0.4)
+            .arcDashGap(2)
+            .arcDashInitialGap(() => Math.random())
+            .arcDashAnimateTime(() => 1500 + Math.random() * 2000)
+            .arcStroke(0.6)
+            .labelsData([
+                { lat: 28.6139, lng: 77.2090, text: "New Delhi (HQ)", color: "white", size: 1.5 },
+                { lat: 37.7749, lng: -122.4194, text: "Silicon Valley", color: "cyan", size: 1.0 },
+                { lat: 51.5074, lng: -0.1278, text: "London", color: "cyan", size: 1.0 },
+                { lat: 35.6762, lng: 139.6503, text: "Tokyo", color: "lime", size: 1.0 }
+            ])
+            .labelSize('size')
+            .labelDotRadius(0.8)
+            .labelColor('color')
+            .labelAltitude(0.01);
+
+        // Set camera position to center the globe
+        globeInstance.pointOfView({ altitude: 2.5 });
+
+        // Auto-rotate
+        globeInstance.controls().autoRotate = true;
+        globeInstance.controls().autoRotateSpeed = 0.8;
+        globeInstance.controls().enableZoom = false;
+
+        console.log("[ThreatMap] 3D Globe initialized successfully!");
+    } catch (error) {
+        console.error('[ThreatMap] Failed to initialize globe:', error);
+        return;
+    }
+
+    // Start ticker simulation with REAL data
+    const nodesEl = document.getElementById('map-nodes');
+    const rateEl = document.getElementById('map-rate');
+    const ticker = document.getElementById('map-ticker');
+
+    // Initial stats from real data
+    const totalReports = realReports.length;
+    const recentReports = realReports.filter(r => r.timestamp && (Date.now() - r.timestamp < 60000));
+
+    if (nodesEl) nodesEl.textContent = totalReports.toLocaleString();
+    if (rateEl) rateEl.innerHTML = `${recentReports.length} <small class='trend-up'>↑</small>`;
+
+    let tickerIndex = 0;
+
+    setInterval(() => {
+        // Update stats with slight variation (simulate real-time changes)
+        if (nodesEl) nodesEl.textContent = (totalReports + Math.floor(Math.random() * 5)).toLocaleString();
+        if (rateEl) rateEl.innerHTML = `${recentReports.length + Math.floor(Math.random() * 3)} <small class='trend-up'>↑</small>`;
+
+        // Show real report data in ticker
+        if (realReports.length > 0) {
+            const report = realReports[tickerIndex % realReports.length];
+            const url = report.url || report.hostname || 'unknown-site.com';
+            const riskScore = report.riskScore || 0;
+            const threatType = riskScore > 70 ? 'Phishing' : riskScore > 50 ? 'Suspicious' : 'Low Risk';
+
+            if (ticker) {
+                ticker.innerText = `⚠️ BLOCKED: ${threatType} site "${url.substring(0, 40)}..." (Risk: ${riskScore}%) ... 🛡️ OCULUS SHIELD ACTIVE ... USER PROTECTED`;
+            }
+            tickerIndex++;
+        } else {
+            // Fallback to simulated messages
+            const threatTypes = ["SQL Injection", "XSS Payload", "Phishing", "Botnet Probe", "DDoS Packet", "Ransomware"];
+            const cityNames = ["Shanghai", "Moscow", "New York", "Lagos", "Berlin", "Sao Paulo", "Tehran", "Pyongyang"];
+
+            const t = threatTypes[Math.floor(Math.random() * threatTypes.length)];
+            const c = cityNames[Math.floor(Math.random() * cityNames.length)];
+            const ip = `192.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.XX`;
+
+            if (ticker) ticker.innerText = `⚠️ PREVENTED: ${t} from ${c} (${ip}) ... BLOCKING ... 🛡️ OCULUS SHIELD ACTIVE ... ANALYZING PACKETS ...`;
+        }
+    }, 2500);
+
+    // Handle resize
+    window.addEventListener('resize', () => {
+        if (globeInstance) {
+            globeInstance.width(container.clientWidth);
+            globeInstance.height(container.clientHeight);
+        }
+    });
+>>>>>>> Stashed changes
+}

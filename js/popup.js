@@ -1,4 +1,21 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // --- 0. INCOGNITO CHECK ---
+    chrome.extension.isAllowedIncognitoAccess((isAllowed) => {
+        const warningEl = document.getElementById('incognito-warning');
+        if (!isAllowed && warningEl) {
+            warningEl.style.display = 'block';
+
+            const btn = document.getElementById('btn-enable-incognito');
+            if (btn) {
+                btn.addEventListener('click', () => {
+                    chrome.tabs.create({
+                        url: 'chrome://extensions/?id=' + chrome.runtime.id
+                    });
+                });
+            }
+        }
+    });
+
     // --- 1. SETTINGS LOGIC ---
     const togglePreview = document.getElementById('toggle-preview');
     const toggleLogin = document.getElementById('toggle-login');
