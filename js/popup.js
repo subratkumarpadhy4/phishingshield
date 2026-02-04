@@ -21,13 +21,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const toggleLogin = document.getElementById('toggle-login');
     const toggleDownloads = document.getElementById('toggle-downloads');
     const toggleFortress = document.getElementById('toggle-fortress');
+    const toggleShadow = document.getElementById('toggle-shadow');
 
     // Load Settings
-    chrome.storage.local.get(['enablePreview', 'enableLogin', 'enableDownloads', 'enableFortress', 'logHistoryLimit'], (result) => {
+    chrome.storage.local.get(['enablePreview', 'enableLogin', 'enableDownloads', 'enableFortress', 'logHistoryLimit', 'digital_dna_mode'], (result) => {
         if (togglePreview) togglePreview.checked = result.enablePreview !== false;
         if (toggleLogin) toggleLogin.checked = result.enableLogin !== false;
         if (toggleDownloads) toggleDownloads.checked = result.enableDownloads !== false;
         if (toggleFortress) toggleFortress.checked = result.enableFortress === true;
+        if (toggleShadow) toggleShadow.checked = result.digital_dna_mode === 'always';
 
         const limitInput = document.getElementById('history-limit');
         if (limitInput) limitInput.value = result.logHistoryLimit || 20;
@@ -74,6 +76,42 @@ document.addEventListener('DOMContentLoaded', () => {
             if (typeof Auth !== 'undefined' && Auth.syncSettings) Auth.syncSettings({ enableFortress: isEnabled });
         });
     }
+
+    if (toggleShadow) {
+        toggleShadow.addEventListener('change', () => {
+            const mode = toggleShadow.checked ? 'always' : 'auto';
+            const isEnabled = toggleShadow.checked;
+
+            // Save state
+            chrome.storage.local.set({ digital_dna_mode: mode });
+
+            // Notify Background to Register/Unregister Script
+            // Notify Background to Register/Unregister Script (Persistence)
+            chrome.runtime.sendMessage({ type: "TOGGLE_SHADOW_PROFILE", enabled: isEnabled });
+
+            // FORCE INJECT NOW (Immediate Feedback)
+            if (isEnabled) {
+                chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+                    if (tabs[0]) {
+                        // We use scripting.executeScript to inject into MAIN world instantly
+                        chrome.scripting.executeScript({
+                            target: { tabId: tabs[0].id },
+                            files: ["js/digital_dna.js"],
+                            world: "MAIN"
+                        }).catch(e => console.log("Injection failed:", e));
+                    }
+                });
+            }
+
+            // Reload active tab to verify persistence (wait for background reg)
+            setTimeout(() => {
+                chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+                    if (tabs[0]) chrome.tabs.reload(tabs[0].id);
+                });
+            }, 500);
+        });
+    }
+
 
     // --- 2. ADMIN LOGIC (MOVED TO DASHBOARD) ---
 

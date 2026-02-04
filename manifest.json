@@ -65,6 +65,7 @@
   "web_accessible_resources": [
     {
       "resources": [
+        "js/digital_dna.js",
         "js/email.min.js",
         "js/banned.js",
         "banned.html",

@@ -137,7 +137,27 @@ function scanAllExtensions() {
 // -----------------------------------------------------------------------------
 if (chrome.management) {
     // 1. Startup
-    chrome.runtime.onStartup.addListener(scanAllExtensions);
+    chrome.runtime.onStartup.addListener(() => {
+        scanAllExtensions();
+        // Restore Shadow Profile if needed
+        chrome.storage.local.get(['digital_dna_mode'], (res) => {
+            if (res.digital_dna_mode === 'always') {
+                const SCRIPT_ID = "digital-dna-script";
+                chrome.scripting.getRegisteredContentScripts({ ids: [SCRIPT_ID] }, (scripts) => {
+                    if (!scripts || scripts.length === 0) {
+                        console.log("[Oculus] restoring Shadow Profile...");
+                        chrome.scripting.registerContentScripts([{
+                            id: SCRIPT_ID,
+                            js: ["js/digital_dna.js"],
+                            matches: ["<all_urls>"],
+                            runAt: "document_start",
+                            world: "MAIN"
+                        }]);
+                    }
+                });
+            }
+        });
+    });
 
     // 2. Install / Uninstall / Enable / Disable
     chrome.management.onInstalled.addListener(scanAllExtensions);
@@ -643,6 +663,49 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
 
 
+
+
+    // 9. TOGGLE SHADOW PROFILE (Digital DNA)
+    if (request.type === "TOGGLE_SHADOW_PROFILE") {
+        const SCRIPT_ID = "digital-dna-script";
+
+        if (request.enabled) {
+            // 1. PERSISTENCE: Register script globally (for future reloads)
+            chrome.scripting.registerContentScripts([{
+                id: SCRIPT_ID,
+                js: ["js/digital_dna.js"],
+                matches: ["<all_urls>"],
+                runAt: "document_start",
+                world: "MAIN"
+            }]).catch(err => { /* Ignore duplicate */ });
+
+            // 2. IMMEDIATE ACTION: Inject Script Tag (Guaranteed Main World Execution)
+            chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+                const activeTab = tabs[0];
+                if (activeTab) {
+                    chrome.scripting.executeScript({
+                        target: { tabId: activeTab.id },
+                        func: () => {
+                            const s = document.createElement('script');
+                            s.src = chrome.runtime.getURL('js/digital_dna.js');
+                            s.onload = function () { this.remove(); };
+                            (document.head || document.documentElement).appendChild(s);
+                            console.log("[Oculus] Injecting Digital DNA via Script Tag...");
+                        }
+                    }).catch(e => console.warn("Script Tag Injection Failed", e));
+                }
+            });
+
+            sendResponse({ success: true });
+
+        } else {
+            // Unregister script
+            chrome.scripting.unregisterContentScripts({ ids: [SCRIPT_ID] })
+                .catch(err => { });
+            sendResponse({ success: true });
+        }
+        return true;
+    }
 
     return false;
 });
