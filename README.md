@@ -215,6 +215,14 @@ How the community keeps the ecosystem clean.
     *   **Level 20**: Chameleon Mode.
 *   **Penalties**: Lose XP for visiting banned sites.
 
+### 10. 🧬 Digital DNA (Shadow Profile)
+**Anti-Fingerprinting Counter-Surveillance.**
+*   **Concept**: Spoofs your browser's "fingerprint" (OS, Screen Resolution, Hardware) to match a generic Windows 10 Profile.
+*   **Effect**: 
+    1.  Protects your privacy from trackers.
+    2.  Confuses phishing kits that look for specific devices (e.g., Mac users).
+    3.  Neutralizes OS-targeted malware (e.g., Mac malware won't execute if it thinks you're on Windows).
+
 
 ---
 
@@ -287,9 +295,8 @@ Load the "Brain" of Oculus into your browser.
 ### 🔐 Admin Portal Access
 To access the global ban system and review reported sites:
 1.  Click the extension icon -> "Dashboard" -> "Admin Portal" (Sidebar).
-2.  **Login Credentials**:
-    *   **Email**: `rajkumarpadhy2006@gmail.com`
-    *   **Password**: `rajkumar123` (Change immediately upon login)
+    *   **Email**: `admin@phishingshield.io` (Contact for access)
+    *   **Password**: `********`
 
 > **✅ NOTE: Production Ready**
 > The extension is pre-configured to communicate with our minimal-latency Vercel API: `https://oculus-eight.vercel.app`.
@@ -322,6 +329,11 @@ To access the global ban system and review reported sites:
 1.  Open `tests/qr_safe.html` -> Scan shows "Safe" (Green Overlay).
 2.  Open `tests/qr_danger.html` -> Scan shows "Malicious" (Red Overlay).
     *   *Note: qr_danger.html simulates a typosquatted domain.*
+
+### Scenario D: Digital DNA
+1.  Enable "Shadow Profile 🧬" in the Popup.
+2.  Visit a fingerprinting site like `browserleaks.com`.
+3.  **Result**: Your Mac/Linux machine appears as a **Windows 10 PC**.
 
 ---
 
