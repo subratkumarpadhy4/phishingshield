@@ -44,7 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         let text = link.innerText.trim();
                         // Remove emoji prefix if present (likely 2 chars + space)
                         if (text.length > 3) text = text.substring(2).trim();
-                        pageTitle.textContent = text + (tabId === 'tab-overview' ? ' Overview' : '');
+                        pageTitle.textContent = text;
                     }
                     console.log("Tab Switched to:", tabId);
                 });
