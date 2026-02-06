@@ -59,6 +59,45 @@
             background: rgba(255, 255, 255, 0.1);
         }
 
+        /* --- SMOOTH TAB ANIMATIONS --- */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeOutDown {
+            from {
+                opacity: 1;
+                transform: translateY(0);
+            }
+
+            to {
+                opacity: 0;
+                transform: translateY(-5px);
+            }
+        }
+
+        .tab-content {
+            display: none;
+            /* Default hidden */
+            animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* View Transitions for specific elements */
+        /* Note: View Transitions API in JS will largely handle the cross-fade page feel, 
+           but these classes ensure good fallback and inner-element staggering. */
+
         body.dark-theme .leaderboard-item .lb-name {
             color: #f8fafc !important;
         }

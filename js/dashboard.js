@@ -29,24 +29,35 @@ document.addEventListener('DOMContentLoaded', () => {
                 link.addEventListener('click', (e) => {
                     e.preventDefault();
 
-                    // Remove Active Class from all
-                    navLinks.forEach(l => l.classList.remove('active'));
-                    tabs.forEach(t => t.classList.remove('active'));
+                    const updateTabState = () => {
+                        // Remove Active Class from all
+                        navLinks.forEach(l => l.classList.remove('active'));
+                        tabs.forEach(t => t.classList.remove('active'));
 
-                    // Add Active to Clicked
-                    link.classList.add('active');
-                    const tabId = link.getAttribute('data-tab');
-                    const tab = document.getElementById(tabId);
-                    if (tab) tab.classList.add('active');
+                        // Add Active to Clicked
+                        link.classList.add('active');
+                        const tabId = link.getAttribute('data-tab');
+                        const tab = document.getElementById(tabId);
+                        if (tab) tab.classList.add('active');
 
-                    // Update Title
-                    if (pageTitle) {
-                        let text = link.innerText.trim();
-                        // Remove emoji prefix if present (likely 2 chars + space)
-                        if (text.length > 3) text = text.substring(2).trim();
-                        pageTitle.textContent = text;
+                        // Update Title
+                        if (pageTitle) {
+                            let text = link.innerText.trim();
+                            // Remove emoji prefix if present (likely 2 chars + space)
+                            if (text.length > 3) text = text.substring(2).trim();
+                            pageTitle.textContent = text;
+                        }
+                        console.log("Tab Switched to:", tabId);
+                    };
+
+                    // Use View Transitions API if available for smooth React-like feel
+                    if (document.startViewTransition) {
+                        document.startViewTransition(() => {
+                            updateTabState();
+                        });
+                    } else {
+                        updateTabState();
                     }
-                    console.log("Tab Switched to:", tabId);
                 });
             });
         }
